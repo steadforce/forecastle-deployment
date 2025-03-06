@@ -1,0 +1,23 @@
+{{- if .Capabilities.APIVersions.Has "networking.istio.io/v1beta1" }}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: applications-acme
+  labels:
+    name: {{ .Release.Namespace | quote }}
+spec:
+  gateways:
+  - {{ .Values.global.istio.ingressGateway.namespace }}/applications-acme-gateway
+  hosts:
+  - {{ .Values.subDomain }}.{{ .Values.global.acme.domain }}
+  http:
+  - headers:
+      response:
+        set:
+          strict-transport-security: max-age=15724800
+    route:
+    - destination:
+        host: forecastle
+        port:
+          number: 80
+{{- end }}

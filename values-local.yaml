@@ -1,0 +1,4 @@
+forecastle:
+  forecastle:
+    deployment:
+      resources: ~

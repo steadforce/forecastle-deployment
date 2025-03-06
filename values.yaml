@@ -1,0 +1,25 @@
+global:
+  acme:
+    domain: steadops.local.steadforce.com
+  istio:
+    ingressGateway:
+      namespace: istio-ingress
+forecastle:
+  forecastle:
+    config:
+      crdEnabled: true
+      headerBackground: '#0a283c'
+      headerForeground: '#05AB7F'
+      namespaceSelector:
+        any: true
+        matchNames: null
+      title: STEADFORCE APPS
+    deployment:
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 300m
+          memory: 64Mi
+subDomain: applications
