@@ -1,6 +1,6 @@
 dependencies:
 - name: forecastle
   repository: https://stakater.github.io/stakater-charts
-  version: v1.0.155
-digest: sha256:eb432fa1a0b8c7d42eb38583e179afa6c39dcef8ff676021bffabbaa3905e196
-generated: "2025-02-12T10:16:32.2763493Z"
+  version: v1.0.159
+digest: sha256:459e3cce7ee116e957c805cfc617a0fdb9f60c0b17dffff33c4511df39c02b26
+generated: "2025-08-19T03:44:07.282214038Z"
