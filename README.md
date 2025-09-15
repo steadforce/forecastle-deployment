@@ -32,9 +32,32 @@ Or with output in JUnit format:
 
 ## Render resource local
 
+### local
+
 ```
  helm template -n forecastle --release-name forecastle --include-crds --skip-tests \
   -a cert-manager.io/v1 \
-  -a networking.istio.io/v1beta1 \
-  -f values-local.yaml --output-dir _local .
+  -a networking.istio.io/v1beta1/VirtualService \
+  -f values-local.yaml \
+  --output-dir _local/local .
+```
+
+### dev
+
+```
+ helm template -n forecastle --release-name forecastle --include-crds --skip-tests \
+  -a cert-manager.io/v1 \
+  -a networking.istio.io/v1beta1/VirtualService \
+  -f values-development.yaml \
+  --output-dir _local/dev .
+```
+
+### prod
+
+```
+ helm template -n forecastle --release-name forecastle --include-crds --skip-tests \
+  -a cert-manager.io/v1 \
+  -a networking.istio.io/v1beta1/VirtualService \
+  -f values-production.yaml \
+  --output-dir _local/prod .
 ```
