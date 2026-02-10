@@ -18,18 +18,6 @@ and then also commit that new version alongside with the altered
 See the [Helm docs](https://helm.sh/docs/topics/charts/#chart-dependencies)
 for details.
 
-## run helm unittests
-
-```shell
- docker run --pull=always -ti --rm -v "$(pwd):/apps" -u $(id -u) helmunittest/helm-unittest .
-```
-
-Or with output in JUnit format:
-
-```shell
- docker run --pull=always -ti --rm -v "$(pwd):/apps" -u $(id -u) helmunittest/helm-unittest -o test-output.xml .
-```
-
 ## Render resource local
 
 ### local
@@ -38,6 +26,7 @@ Or with output in JUnit format:
  helm template -n forecastle --release-name forecastle --include-crds --skip-tests \
   -a cert-manager.io/v1 \
   -a networking.istio.io/v1beta1/VirtualService \
+  -f values-subchart-overrides.yaml \
   -f values-local.yaml \
   --output-dir _render_output/local .
 ```
@@ -48,6 +37,7 @@ Or with output in JUnit format:
  helm template -n forecastle --release-name forecastle --include-crds --skip-tests \
   -a cert-manager.io/v1 \
   -a networking.istio.io/v1beta1/VirtualService \
+  -f values-subchart-overrides.yaml \
   -f values-development.yaml \
   --output-dir _render_output/dev .
 ```
@@ -58,6 +48,7 @@ Or with output in JUnit format:
  helm template -n forecastle --release-name forecastle --include-crds --skip-tests \
   -a cert-manager.io/v1 \
   -a networking.istio.io/v1beta1/VirtualService \
+  -f values-subchart-overrides.yaml \
   -f values-production.yaml \
   --output-dir _render_output/prod .
 ```
