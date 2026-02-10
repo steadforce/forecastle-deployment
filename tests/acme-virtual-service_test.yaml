@@ -1,0 +1,77 @@
+suite: test acme-virtual-service
+release:
+  name: nexus
+templates:
+  - acme-virtual-service.yaml
+tests:
+  - it: should render the virtual service
+    capabilities:
+      apiVersions:
+        - networking.istio.io/v1beta1/VirtualService
+    set:
+      subDomain: test-subdomain
+      global:
+        acme:
+          domain: test.domain.com
+        istio:
+          ingressGateway:
+            namespace: istio-namespace
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: VirtualService
+      - isAPIVersion:
+          of: networking.istio.io/v1beta1
+      - equal:
+          path: metadata.name
+          value: applications-acme
+      - equal:
+          path: spec.gateways[0]
+          value: istio-namespace/applications-acme-gateway
+      - equal:
+          path: spec.hosts[0]
+          value: test-subdomain.test.domain.com
+      - equal:
+          path: spec.http[0].route[0].destination.host
+          value: forecastle
+      - equal:
+          path: spec.http[0].route[0].destination.port.number
+          value: 80
+  - it: should not render the virtual service if api version is not present
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render the correct host for the local environment
+    capabilities:
+      apiVersions:
+        - networking.istio.io/v1beta1/VirtualService
+    values:
+      - ../values-local.yaml
+    asserts:
+      - matchRegex:
+          path: spec.hosts[0]
+          pattern: "steadops\\.local\\.steadforce\\.com$"
+
+  - it: should render the correct host for the development environment
+    capabilities:
+      apiVersions:
+        - networking.istio.io/v1beta1/VirtualService
+    values:
+      - ../values-development.yaml
+    asserts:
+      - matchRegex:
+          path: spec.hosts[0]
+          pattern: "dev\\.k8s01\\.steadforce\\.com$"
+
+  - it: should render the correct host for the production environment
+    capabilities:
+      apiVersions:
+        - networking.istio.io/v1beta1/VirtualService
+    values:
+      - ../values-production.yaml
+    asserts:
+      - matchRegex:
+          path: spec.hosts[0]
+          pattern: "k8s01\\.steadforce\\.com$"
