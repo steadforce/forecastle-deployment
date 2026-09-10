@@ -1,0 +1,35 @@
+suite: forecastle configmap data driven by root config values
+templates:
+- charts/forecastle/templates/configmap.yaml
+tests:
+- it: sets the header colors and title from root values
+  asserts:
+  - matchRegex:
+      path: data["config.yaml"]
+      pattern: "headerBackground: '#0a283c'"
+  - matchRegex:
+      path: data["config.yaml"]
+      pattern: "headerForeground: '#05AB7F'"
+  - matchRegex:
+      path: data["config.yaml"]
+      pattern: 'title: STEADFORCE APPS'
+
+- it: enables the crd-backed app discovery flag
+  asserts:
+  - matchRegex:
+      path: data["config.yaml"]
+      pattern: 'crdEnabled: true'
+
+- it: enables selecting apps from any namespace
+  asserts:
+  - matchRegex:
+      path: data["config.yaml"]
+      pattern: 'any: true'
+
+- it: removes the subchart default namespaceSelector matchNames via the root null override
+  asserts:
+  - notMatchRegex:
+      path: data["config.yaml"]
+      pattern: 'matchNames'
+  - matchSnapshot:
+      path: data["config.yaml"]
