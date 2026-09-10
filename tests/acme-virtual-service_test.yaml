@@ -8,7 +8,7 @@ tests:
     - networking.istio.io/v1beta1/VirtualService
   asserts:
   - equal:
-      path: spec.hosts[0]
+      path: &virtualServiceHostPath spec.hosts[0]
       value: applications.steadops.local.steadforce.com
   - matchSnapshot:
       path: spec.hosts
@@ -19,7 +19,7 @@ tests:
   - ../values-development.yaml
   asserts:
   - equal:
-      path: spec.hosts[0]
+      path: *virtualServiceHostPath
       value: applications.dev.k8s01.steadforce.com
 
 - it: renders the production host from values-production.yaml
@@ -28,7 +28,7 @@ tests:
   - ../values-production.yaml
   asserts:
   - equal:
-      path: spec.hosts[0]
+      path: *virtualServiceHostPath
       value: applications.k8s01.steadforce.com
 
 - it: renders the sf-k8s03-dev host from values-sf-k8s03-dev.yaml
@@ -37,7 +37,7 @@ tests:
   - ../values-sf-k8s03-dev.yaml
   asserts:
   - equal:
-      path: spec.hosts[0]
+      path: *virtualServiceHostPath
       value: applications.k8s03-dev.steadforce.com
 
 - it: renders the sf-k8s04-dev host from values-sf-k8s04-dev.yaml
@@ -46,7 +46,7 @@ tests:
   - ../values-sf-k8s04-dev.yaml
   asserts:
   - equal:
-      path: spec.hosts[0]
+      path: *virtualServiceHostPath
       value: applications.k8s04-dev.steadforce.com
 
 - it: routes through the configured istio ingress gateway

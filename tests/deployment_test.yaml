@@ -8,19 +8,19 @@ tests:
   - equal:
       path: spec.template.spec.containers[0].resources.requests.cpu
       value: 10m
-    template: charts/forecastle/templates/deployment.yaml
+    template: &deploymentTemplate charts/forecastle/templates/deployment.yaml
   - equal:
       path: spec.template.spec.containers[0].resources.requests.memory
       value: 16Mi
-    template: charts/forecastle/templates/deployment.yaml
+    template: *deploymentTemplate
   - equal:
       path: spec.template.spec.containers[0].resources.limits.cpu
       value: 300m
-    template: charts/forecastle/templates/deployment.yaml
+    template: *deploymentTemplate
   - equal:
       path: spec.template.spec.containers[0].resources.limits.memory
       value: 64Mi
-    template: charts/forecastle/templates/deployment.yaml
+    template: *deploymentTemplate
 
 - it: uses the zero-resource overrides from values-local.yaml
   values:
@@ -29,26 +29,26 @@ tests:
   - equal:
       path: spec.template.spec.containers[0].resources.requests.cpu
       value: 0m
-    template: charts/forecastle/templates/deployment.yaml
+    template: *deploymentTemplate
   - equal:
       path: spec.template.spec.containers[0].resources.requests.memory
       value: 0Mi
-    template: charts/forecastle/templates/deployment.yaml
+    template: *deploymentTemplate
   - equal:
       path: spec.template.spec.containers[0].resources.limits.cpu
       value: 0m
-    template: charts/forecastle/templates/deployment.yaml
+    template: *deploymentTemplate
   - equal:
       path: spec.template.spec.containers[0].resources.limits.memory
       value: 64Mi
-    template: charts/forecastle/templates/deployment.yaml
+    template: *deploymentTemplate
   - matchSnapshot:
       path: spec.template.spec.containers[0].resources
-    template: charts/forecastle/templates/deployment.yaml
+    template: *deploymentTemplate
 
 - it: renders the forecastle image from the subchart defaults
   asserts:
   - matchRegex:
       path: spec.template.spec.containers[0].image
       pattern: ^stakater/forecastle:v[0-9.]+$
-    template: charts/forecastle/templates/deployment.yaml
+    template: *deploymentTemplate

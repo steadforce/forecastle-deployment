@@ -5,31 +5,31 @@ tests:
 - it: sets the header colors and title from root values
   asserts:
   - matchRegex:
-      path: data["config.yaml"]
+      path: &configDataPath data["config.yaml"]
       pattern: "headerBackground: '#0a283c'"
   - matchRegex:
-      path: data["config.yaml"]
+      path: *configDataPath
       pattern: "headerForeground: '#05AB7F'"
   - matchRegex:
-      path: data["config.yaml"]
+      path: *configDataPath
       pattern: 'title: STEADFORCE APPS'
 
 - it: enables the crd-backed app discovery flag
   asserts:
   - matchRegex:
-      path: data["config.yaml"]
+      path: *configDataPath
       pattern: 'crdEnabled: true'
 
 - it: enables selecting apps from any namespace
   asserts:
   - matchRegex:
-      path: data["config.yaml"]
+      path: *configDataPath
       pattern: 'any: true'
 
 - it: removes the subchart default namespaceSelector matchNames via the root null override
   asserts:
   - notMatchRegex:
-      path: data["config.yaml"]
+      path: *configDataPath
       pattern: 'matchNames'
   - matchSnapshot:
-      path: data["config.yaml"]
+      path: *configDataPath
