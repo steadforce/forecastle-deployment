@@ -1,0 +1,54 @@
+suite: forecastle deployment resources per environment
+templates:
+- charts/forecastle/templates/deployment.yaml
+- charts/forecastle/templates/configmap.yaml
+tests:
+- it: uses the default resource requests and limits
+  asserts:
+  - equal:
+      path: spec.template.spec.containers[0].resources.requests.cpu
+      value: 10m
+    template: &deploymentTemplate charts/forecastle/templates/deployment.yaml
+  - equal:
+      path: spec.template.spec.containers[0].resources.requests.memory
+      value: 16Mi
+    template: *deploymentTemplate
+  - equal:
+      path: spec.template.spec.containers[0].resources.limits.cpu
+      value: 300m
+    template: *deploymentTemplate
+  - equal:
+      path: spec.template.spec.containers[0].resources.limits.memory
+      value: 64Mi
+    template: *deploymentTemplate
+
+- it: uses the zero-resource overrides from values-local.yaml
+  values:
+  - ../values-local.yaml
+  asserts:
+  - equal:
+      path: spec.template.spec.containers[0].resources.requests.cpu
+      value: 0m
+    template: *deploymentTemplate
+  - equal:
+      path: spec.template.spec.containers[0].resources.requests.memory
+      value: 0Mi
+    template: *deploymentTemplate
+  - equal:
+      path: spec.template.spec.containers[0].resources.limits.cpu
+      value: 0m
+    template: *deploymentTemplate
+  - equal:
+      path: spec.template.spec.containers[0].resources.limits.memory
+      value: 64Mi
+    template: *deploymentTemplate
+  - matchSnapshot:
+      path: spec.template.spec.containers[0].resources
+    template: *deploymentTemplate
+
+- it: renders the forecastle image from the subchart defaults
+  asserts:
+  - matchRegex:
+      path: spec.template.spec.containers[0].image
+      pattern: ^stakater/forecastle:v[0-9.]+$
+    template: *deploymentTemplate
