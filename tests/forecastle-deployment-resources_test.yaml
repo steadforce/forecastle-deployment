@@ -70,3 +70,11 @@ tests:
     values: *prodValues
     template: charts/forecastle/templates/deployment.yaml
     asserts: *nonLocalResourcesAsserts
+
+  - it: sets non-zero forecastle container resources for sf-k8s03-dev cluster
+    values:
+    - ../values-subchart-overrides.yaml
+    - ../values-development.yaml
+    - ../values-sf-k8s03-dev.yaml
+    template: charts/forecastle/templates/deployment.yaml
+    asserts: *nonLocalResourcesAsserts

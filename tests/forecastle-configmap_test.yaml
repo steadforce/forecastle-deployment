@@ -1,0 +1,36 @@
+suite: forecastle configmap from subchart overrides
+release:
+  name: forecastle
+templates:
+  - charts/forecastle/templates/configmap.yaml
+tests:
+  - it: renders the Steadforce title and header colors
+    values: &overridesValues
+      - ../values-subchart-overrides.yaml
+    asserts:
+      - matchRegex:
+          path: &configPath data["config.yaml"]
+          pattern: "(?m)^title: STEADFORCE APPS$"
+      - matchRegex:
+          path: *configPath
+          pattern: "(?m)^headerBackground: '#0a283c'$"
+      - matchRegex:
+          path: *configPath
+          pattern: "(?m)^headerForeground: '#05AB7F'$"
+
+  - it: enables ForecastleApp CRD discovery
+    values: *overridesValues
+    asserts:
+      - matchRegex:
+          path: *configPath
+          pattern: "(?m)^crdEnabled: true$"
+
+  - it: selects ingresses from any namespace without a name list
+    values: *overridesValues
+    asserts:
+      - matchRegex:
+          path: *configPath
+          pattern: "(?m)^namespaceSelector:\\n  any: true$"
+      - notMatchRegex:
+          path: *configPath
+          pattern: "matchNames"

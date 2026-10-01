@@ -43,35 +43,57 @@ tests:
       - hasDocuments:
           count: 0
 
-  - it: should render the correct host for the local environment
+  - it: uses the default ingress gateway namespace from values.yaml
     capabilities:
       apiVersions:
         - networking.istio.io/v1beta1/VirtualService
     values:
+      - ../values-subchart-overrides.yaml
       - ../values-local.yaml
     asserts:
-      - matchRegex:
-          path: spec.hosts[0]
-          pattern: "steadops\\.local\\.steadforce\\.com$"
+      - equal:
+          path: spec.gateways[0]
+          value: istio-ingress/applications-acme-gateway
 
-  - it: should render the correct host for the development environment
-    capabilities:
+  - it: renders the local applications host
+    capabilities: &virtualServiceCapabilities
       apiVersions:
         - networking.istio.io/v1beta1/VirtualService
     values:
+      - ../values-subchart-overrides.yaml
+      - ../values-local.yaml
+    asserts:
+      - equal:
+          path: &hostPath spec.hosts[0]
+          value: applications.steadops.local.steadforce.com
+
+  - it: renders the sf-k8s01-dev applications host
+    capabilities: *virtualServiceCapabilities
+    values:
+      - ../values-subchart-overrides.yaml
       - ../values-development.yaml
     asserts:
-      - matchRegex:
-          path: spec.hosts[0]
-          pattern: "dev\\.k8s01\\.steadforce\\.com$"
+      - equal:
+          path: *hostPath
+          value: applications.dev.k8s01.steadforce.com
 
-  - it: should render the correct host for the production environment
-    capabilities:
-      apiVersions:
-        - networking.istio.io/v1beta1/VirtualService
+  - it: renders the sf-k8s01-prod applications host
+    capabilities: *virtualServiceCapabilities
     values:
+      - ../values-subchart-overrides.yaml
       - ../values-production.yaml
     asserts:
-      - matchRegex:
-          path: spec.hosts[0]
-          pattern: "k8s01\\.steadforce\\.com$"
+      - equal:
+          path: *hostPath
+          value: applications.k8s01.steadforce.com
+
+  - it: renders the sf-k8s03-dev applications host
+    capabilities: *virtualServiceCapabilities
+    values:
+      - ../values-subchart-overrides.yaml
+      - ../values-development.yaml
+      - ../values-sf-k8s03-dev.yaml
+    asserts:
+      - equal:
+          path: *hostPath
+          value: applications.k8s03-dev.steadforce.com
