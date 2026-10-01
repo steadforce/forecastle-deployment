@@ -4,7 +4,7 @@ release:
 templates:
   - acme-virtual-service.yaml
 tests:
-  - it: should render the virtual service
+  - it: renders the virtual service with the configured host, gateway and route
     capabilities:
       apiVersions:
         - networking.istio.io/v1beta1/VirtualService
@@ -38,7 +38,7 @@ tests:
       - equal:
           path: spec.http[0].route[0].destination.port.number
           value: 80
-  - it: should not render the virtual service if api version is not present
+  - it: omits the virtual service without the VirtualService API
     asserts:
       - hasDocuments:
           count: 0

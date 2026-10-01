@@ -5,26 +5,26 @@ templates:
   - charts/forecastle/templates/deployment.yaml
   - charts/forecastle/templates/configmap.yaml
 tests:
-  - it: snapshot test for detecting side effects on forecastle-deployment during development on local
+  - it: matches the local cluster snapshot
     asserts:
     - matchSnapshot: {}
     values: &localValues
     - ../values-subchart-overrides.yaml
     - ../values-local.yaml
-  - it: snapshot test for detecting side effects on forecastle-deployment during development on dev
+  - it: matches the sf-k8s01-dev cluster snapshot
     asserts:
     - matchSnapshot: {}
     values: &devValues
     - ../values-subchart-overrides.yaml
     - ../values-development.yaml
-  - it: snapshot test for detecting side effects on forecastle-deployment during local development on prod
+  - it: matches the sf-k8s01-prod cluster snapshot
     asserts:
     - matchSnapshot: {}
     values: &prodValues
     - ../values-subchart-overrides.yaml
     - ../values-production.yaml
     
-  - it: forecastle container resources for local cluster
+  - it: sets zero forecastle container CPU resources and memory requests for the local cluster
     values: *localValues
     template: charts/forecastle/templates/deployment.yaml
     asserts:
@@ -45,7 +45,7 @@ tests:
         # on local cluster we expect 0 or 0Mi 0Gi memory requests
         pattern: "^0(Ki|Mi|Gi)?$"
 
-  - it: forecastle container resources for dev-cloud01 cluster
+  - it: sets non-zero forecastle container resources for the sf-k8s01-dev cluster
     values: *devValues
     template: charts/forecastle/templates/deployment.yaml
     asserts: &nonLocalResourcesAsserts
@@ -66,12 +66,12 @@ tests:
         # on non local cluster we expect non 0 memory requests
         pattern: *nonZeroMemoryPattern
 
-  - it: forecastle container resources for prod-cloud01 cluster
+  - it: sets non-zero forecastle container resources for the sf-k8s01-prod cluster
     values: *prodValues
     template: charts/forecastle/templates/deployment.yaml
     asserts: *nonLocalResourcesAsserts
 
-  - it: sets non-zero forecastle container resources for sf-k8s03-dev cluster
+  - it: sets non-zero forecastle container resources for the sf-k8s03-dev cluster
     values:
     - ../values-subchart-overrides.yaml
     - ../values-development.yaml
