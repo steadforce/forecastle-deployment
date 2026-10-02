@@ -1,0 +1,13 @@
+suite: namespace
+templates:
+- namespace.yaml
+tests:
+- it: enables istio sidecar injection on the release namespace
+  asserts:
+  - equal:
+      path: metadata.labels["istio-injection"]
+      value: enabled
+  - equal:
+      path: metadata.name
+      value: NAMESPACE
+  - matchSnapshot: {}
