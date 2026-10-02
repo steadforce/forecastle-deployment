@@ -49,6 +49,15 @@ tests:
       path: *virtualServiceHostPath
       value: applications.k8s04-dev.steadforce.com
 
+- it: renders the sf-k8s05-dev host from values-sf-k8s05-dev.yaml
+  capabilities: *istioVirtualServiceCapabilities
+  values:
+  - ../values-sf-k8s05-dev.yaml
+  asserts:
+  - equal:
+      path: *virtualServiceHostPath
+      value: applications.k8s05-dev.steadforce.com
+
 - it: routes through the configured istio ingress gateway
   capabilities: *istioVirtualServiceCapabilities
   asserts:

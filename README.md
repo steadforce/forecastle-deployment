@@ -37,6 +37,7 @@ This chart wraps the upstream `forecastle` chart as a dependency and adds:
 | `values-production.yaml`         | Production     | `k8s01.steadforce.com`              |
 | `values-sf-k8s03-dev.yaml`       | sf-k8s03-dev   | `k8s03-dev.steadforce.com`          |
 | `values-sf-k8s04-dev.yaml`       | sf-k8s04-dev   | `k8s04-dev.steadforce.com`          |
+| `values-sf-k8s05-dev.yaml`       | sf-k8s05-dev   | `k8s05-dev.steadforce.com`          |
 
 ## Dependencies
 
@@ -119,7 +120,7 @@ API versions the templates depend on:
 ```
 
 > [!TIP]
-> Use `--values values-sf-k8s03-dev.yaml` or `--values values-sf-k8s04-dev.yaml` to render the dedicated
+> Use `--values values-sf-k8s03-dev.yaml`, `--values values-sf-k8s04-dev.yaml` or `--values values-sf-k8s05-dev.yaml` to render the dedicated
 > dev-cluster environments the same way.
 
 ## Running Tests
