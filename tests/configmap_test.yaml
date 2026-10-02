@@ -26,10 +26,8 @@ tests:
       path: *configDataPath
       pattern: 'any: true'
 
-- it: removes the subchart default namespaceSelector matchNames via the root null override
+- it: 'replaces the subchart default namespaceSelector matchNames with an empty list'
   asserts:
-  - notMatchRegex:
+  - matchRegex:
       path: *configDataPath
-      pattern: 'matchNames'
-  - matchSnapshot:
-      path: *configDataPath
+      pattern: 'matchNames: \[\]'
