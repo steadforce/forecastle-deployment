@@ -5,7 +5,7 @@ templates:
   - charts/forecastle/templates/configmap.yaml
 tests:
   - it: renders the Steadforce title and header colors
-    values: &overridesValues
+    values: &subchartOverrideValues
       - ../values-subchart-overrides.yaml
     asserts:
       - matchRegex:
@@ -19,14 +19,14 @@ tests:
           pattern: "(?m)^headerForeground: '#05AB7F'$"
 
   - it: enables ForecastleApp CRD discovery
-    values: *overridesValues
+    values: *subchartOverrideValues
     asserts:
       - matchRegex:
           path: *configPath
           pattern: "(?m)^crdEnabled: true$"
 
   - it: selects ingresses from any namespace without a name list
-    values: *overridesValues
+    values: *subchartOverrideValues
     asserts:
       - matchRegex:
           path: *configPath

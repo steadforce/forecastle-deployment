@@ -5,7 +5,7 @@ templates:
   - acme-virtual-service.yaml
 tests:
   - it: renders the virtual service with the configured host, gateway and route
-    capabilities:
+    capabilities: &virtualServiceCapabilities
       apiVersions:
         - networking.istio.io/v1beta1/VirtualService
     set:
@@ -44,11 +44,9 @@ tests:
           count: 0
 
   - it: uses the default ingress gateway namespace from values.yaml
-    capabilities:
-      apiVersions:
-        - networking.istio.io/v1beta1/VirtualService
+    capabilities: *virtualServiceCapabilities
     values:
-      - ../values-subchart-overrides.yaml
+      - &subchartOverrideValuesFile ../values-subchart-overrides.yaml
       - ../values-local.yaml
     asserts:
       - equal:
@@ -56,11 +54,9 @@ tests:
           value: istio-ingress/applications-acme-gateway
 
   - it: renders the local applications host
-    capabilities: &virtualServiceCapabilities
-      apiVersions:
-        - networking.istio.io/v1beta1/VirtualService
+    capabilities: *virtualServiceCapabilities
     values:
-      - ../values-subchart-overrides.yaml
+      - *subchartOverrideValuesFile
       - ../values-local.yaml
     asserts:
       - equal:
@@ -70,7 +66,7 @@ tests:
   - it: renders the sf-k8s01-dev applications host
     capabilities: *virtualServiceCapabilities
     values:
-      - ../values-subchart-overrides.yaml
+      - *subchartOverrideValuesFile
       - ../values-development.yaml
     asserts:
       - equal:
@@ -80,7 +76,7 @@ tests:
   - it: renders the sf-k8s01-prod applications host
     capabilities: *virtualServiceCapabilities
     values:
-      - ../values-subchart-overrides.yaml
+      - *subchartOverrideValuesFile
       - ../values-production.yaml
     asserts:
       - equal:
@@ -90,7 +86,7 @@ tests:
   - it: renders the sf-k8s03-dev applications host
     capabilities: *virtualServiceCapabilities
     values:
-      - ../values-subchart-overrides.yaml
+      - *subchartOverrideValuesFile
       - ../values-development.yaml
       - ../values-sf-k8s03-dev.yaml
     asserts:

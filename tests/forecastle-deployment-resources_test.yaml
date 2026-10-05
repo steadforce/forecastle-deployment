@@ -2,31 +2,31 @@ suite: forecastle container resources per cluster
 release:
   name: forecastle
 templates:
-  - charts/forecastle/templates/deployment.yaml
+  - &deploymentTemplate charts/forecastle/templates/deployment.yaml
   - charts/forecastle/templates/configmap.yaml
 tests:
   - it: matches the local cluster snapshot
     asserts:
     - matchSnapshot: {}
     values: &localValues
-    - ../values-subchart-overrides.yaml
+    - &subchartOverrideValuesFile ../values-subchart-overrides.yaml
     - ../values-local.yaml
   - it: matches the sf-k8s01-dev cluster snapshot
     asserts:
     - matchSnapshot: {}
-    values: &devValues
-    - ../values-subchart-overrides.yaml
+    values: &developmentValues
+    - *subchartOverrideValuesFile
     - ../values-development.yaml
   - it: matches the sf-k8s01-prod cluster snapshot
     asserts:
     - matchSnapshot: {}
-    values: &prodValues
-    - ../values-subchart-overrides.yaml
+    values: &productionValues
+    - *subchartOverrideValuesFile
     - ../values-production.yaml
     
   - it: sets zero forecastle container CPU resources and memory requests for the local cluster
     values: *localValues
-    template: charts/forecastle/templates/deployment.yaml
+    template: *deploymentTemplate
     asserts:
     - matchRegex:
         path: &cpuLimitsPath spec.template.spec.containers[?(@.name == "forecastle")].resources.limits.cpu
@@ -46,13 +46,13 @@ tests:
         pattern: "^0(Ki|Mi|Gi)?$"
 
   - it: sets non-zero forecastle container resources for the sf-k8s01-dev cluster
-    values: *devValues
-    template: charts/forecastle/templates/deployment.yaml
-    asserts: &nonLocalResourcesAsserts
+    values: *developmentValues
+    template: *deploymentTemplate
+    asserts: &nonLocalResourcesAssert
     - matchRegex:
         path: *cpuLimitsPath
         # on non local cluster we expect >= 1m cpu limits
-        pattern: &cpuPattern "^[1-9][0-9]*(m)?$"
+        pattern: &nonZeroCpuPattern "^[1-9][0-9]*(m)?$"
     - matchRegex:
         path: *memoryLimitsPath
         # on non local cluster we expect non 0 memory limits
@@ -60,21 +60,21 @@ tests:
     - matchRegex:
         path: *requestsCpuPath
         # on non local cluster we expect  >= 1m cpu requests
-        pattern: *cpuPattern
+        pattern: *nonZeroCpuPattern
     - matchRegex:
         path: *requestsMemoryPath
         # on non local cluster we expect non 0 memory requests
         pattern: *nonZeroMemoryPattern
 
   - it: sets non-zero forecastle container resources for the sf-k8s01-prod cluster
-    values: *prodValues
-    template: charts/forecastle/templates/deployment.yaml
-    asserts: *nonLocalResourcesAsserts
+    values: *productionValues
+    template: *deploymentTemplate
+    asserts: *nonLocalResourcesAssert
 
   - it: sets non-zero forecastle container resources for the sf-k8s03-dev cluster
     values:
-    - ../values-subchart-overrides.yaml
+    - *subchartOverrideValuesFile
     - ../values-development.yaml
     - ../values-sf-k8s03-dev.yaml
-    template: charts/forecastle/templates/deployment.yaml
-    asserts: *nonLocalResourcesAsserts
+    template: *deploymentTemplate
+    asserts: *nonLocalResourcesAssert
