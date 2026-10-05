@@ -25,12 +25,9 @@ tests:
           path: *configPath
           pattern: "(?m)^crdEnabled: true$"
 
-  - it: selects ingresses from any namespace without a name list
+  - it: selects ingresses from any namespace with an empty name list
     values: *subchartOverrideValues
     asserts:
       - matchRegex:
           path: *configPath
-          pattern: "(?m)^namespaceSelector:\\n  any: true$"
-      - notMatchRegex:
-          path: *configPath
-          pattern: "matchNames"
+          pattern: "(?m)^namespaceSelector:\\n  any: true\\n  matchNames: \\[\\]$"

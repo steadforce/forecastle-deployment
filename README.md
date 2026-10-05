@@ -36,7 +36,7 @@ All commands run from the repository root.
 | `values-subchart-overrides.yaml` | Overrides for the `forecastle` dependency: dashboard config and resources. |
 | `values-local.yaml` | Zero CPU and memory requests and zero CPU limit for the local cluster. |
 | `values-development.yaml`, `values-production.yaml` | ACME domains of `sf-k8s01-dev` and `sf-k8s01-prod`. |
-| `values-sf-k8s03-dev.yaml` | ACME domain of `sf-k8s03-dev`, layered on top of `values-development.yaml`. |
+| `values-sf-k8s03-dev.yaml`, `values-sf-k8s04-dev.yaml`, `values-sf-k8s05-dev.yaml` | ACME domains of `sf-k8s03-dev`, `sf-k8s04-dev`, and `sf-k8s05-dev`, each layered on top of `values-development.yaml`. |
 | `templates/` | The release `Namespace` and the `applications-acme` `VirtualService`. |
 | `tests/` | Helm unittest suites, with git-ignored snapshots. |
 | `renovate.json` | Renovate configuration for this repository. |
@@ -58,6 +58,8 @@ tests and the rendering example below use these combinations:
 | `sf-k8s01-dev` | `values-subchart-overrides.yaml`, `values-development.yaml` |
 | `sf-k8s01-prod` | `values-subchart-overrides.yaml`, `values-production.yaml` |
 | `sf-k8s03-dev` | `values-subchart-overrides.yaml`, `values-development.yaml`, `values-sf-k8s03-dev.yaml` |
+| `sf-k8s04-dev` | `values-subchart-overrides.yaml`, `values-development.yaml`, `values-sf-k8s04-dev.yaml` |
+| `sf-k8s05-dev` | `values-subchart-overrides.yaml`, `values-development.yaml`, `values-sf-k8s05-dev.yaml` |
 
 ## Rendering
 
@@ -76,7 +78,9 @@ Render the manifests of every cluster into the git-ignored `_render_output/<clus
        local=values-local.yaml \
        sf-k8s01-dev=values-development.yaml \
        sf-k8s01-prod=values-production.yaml \
-       sf-k8s03-dev=values-development.yaml,values-sf-k8s03-dev.yaml; do
+       sf-k8s03-dev=values-development.yaml,values-sf-k8s03-dev.yaml \
+       sf-k8s04-dev=values-development.yaml,values-sf-k8s04-dev.yaml \
+       sf-k8s05-dev=values-development.yaml,values-sf-k8s05-dev.yaml; do
        helm template \
          -a networking.istio.io/v1beta1/VirtualService \
          -f "values-subchart-overrides.yaml,${cluster#*=}" \

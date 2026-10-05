@@ -6,7 +6,7 @@ forecastle:
       headerForeground: '#05AB7F'
       namespaceSelector:
         any: true
-        matchNames: null
+        matchNames: []
       title: STEADFORCE APPS
     deployment:
       resources:

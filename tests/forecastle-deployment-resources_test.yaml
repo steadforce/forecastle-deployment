@@ -1,4 +1,4 @@
-suite: forecastle container resources per cluster
+suite: forecastle container image and resources per cluster
 release:
   name: forecastle
 templates:
@@ -78,3 +78,65 @@ tests:
     - ../values-sf-k8s03-dev.yaml
     template: *deploymentTemplate
     asserts: *nonLocalResourcesAssert
+
+  - it: sets the forecastle container resources from values-subchart-overrides.yaml
+    values:
+    - *subchartOverrideValuesFile
+    template: *deploymentTemplate
+    asserts:
+    - equal:
+        path: *requestsCpuPath
+        value: 10m
+    - equal:
+        path: *requestsMemoryPath
+        value: 16Mi
+    - equal:
+        path: *cpuLimitsPath
+        value: 300m
+    - equal:
+        path: *memoryLimitsPath
+        value: 64Mi
+
+  - it: sets the exact zero-resource overrides from values-local.yaml
+    values: *localValues
+    template: *deploymentTemplate
+    asserts:
+    - equal:
+        path: *requestsCpuPath
+        value: 0m
+    - equal:
+        path: *requestsMemoryPath
+        value: 0Mi
+    - equal:
+        path: *cpuLimitsPath
+        value: 0m
+    - equal:
+        path: *memoryLimitsPath
+        value: 64Mi
+    - matchSnapshot:
+        path: spec.template.spec.containers[?(@.name == "forecastle")].resources
+
+  - it: sets non-zero forecastle container resources for the sf-k8s04-dev cluster
+    values:
+    - *subchartOverrideValuesFile
+    - ../values-development.yaml
+    - ../values-sf-k8s04-dev.yaml
+    template: *deploymentTemplate
+    asserts: *nonLocalResourcesAssert
+
+  - it: sets non-zero forecastle container resources for the sf-k8s05-dev cluster
+    values:
+    - *subchartOverrideValuesFile
+    - ../values-development.yaml
+    - ../values-sf-k8s05-dev.yaml
+    template: *deploymentTemplate
+    asserts: *nonLocalResourcesAssert
+
+  - it: renders the forecastle image from the subchart defaults
+    values:
+    - *subchartOverrideValuesFile
+    template: *deploymentTemplate
+    asserts:
+    - matchRegex:
+        path: spec.template.spec.containers[?(@.name == "forecastle")].image
+        pattern: ^stakater/forecastle:v[0-9.]+$

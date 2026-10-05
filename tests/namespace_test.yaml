@@ -1,0 +1,15 @@
+suite: release namespace with istio sidecar injection
+templates:
+  - namespace.yaml
+tests:
+  - it: names the namespace after the release and enables istio sidecar injection
+    release:
+      namespace: forecastle
+    asserts:
+      - equal:
+          path: metadata.name
+          value: forecastle
+      - equal:
+          path: metadata.labels["istio-injection"]
+          value: enabled
+      - matchSnapshot: {}
