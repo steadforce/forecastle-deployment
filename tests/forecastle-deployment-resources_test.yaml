@@ -1,0 +1,142 @@
+suite: forecastle container image and resources per cluster
+release:
+  name: forecastle
+templates:
+  - &deploymentTemplate charts/forecastle/templates/deployment.yaml
+  - charts/forecastle/templates/configmap.yaml
+tests:
+  - it: matches the local cluster snapshot
+    asserts:
+    - matchSnapshot: {}
+    values: &localValues
+    - &subchartOverrideValuesFile ../values-subchart-overrides.yaml
+    - ../values-local.yaml
+  - it: matches the sf-k8s01-dev cluster snapshot
+    asserts:
+    - matchSnapshot: {}
+    values: &developmentValues
+    - *subchartOverrideValuesFile
+    - ../values-development.yaml
+  - it: matches the sf-k8s01-prod cluster snapshot
+    asserts:
+    - matchSnapshot: {}
+    values: &productionValues
+    - *subchartOverrideValuesFile
+    - ../values-production.yaml
+    
+  - it: sets zero forecastle container CPU resources and memory requests for the local cluster
+    values: *localValues
+    template: *deploymentTemplate
+    asserts:
+    - matchRegex:
+        path: &cpuLimitsPath spec.template.spec.containers[?(@.name == "forecastle")].resources.limits.cpu
+        # on local cluster we expect 0 or 0m cpu limits
+        pattern: &localCpuPattern "^0(m)?$"
+    - matchRegex:
+        path: &memoryLimitsPath spec.template.spec.containers[?(@.name == "forecastle")].resources.limits.memory
+        # on local cluster we expect non 0 memory limits
+        pattern: &nonZeroMemoryPattern "^[1-9][0-9]*(Ki|Mi|Gi)?$"
+    - matchRegex:
+        path: &requestsCpuPath spec.template.spec.containers[?(@.name == "forecastle")].resources.requests.cpu
+        # on local cluster we expect 0 or 0m cpu requests
+        pattern: *localCpuPattern
+    - matchRegex:
+        path: &requestsMemoryPath spec.template.spec.containers[?(@.name == "forecastle")].resources.requests.memory
+        # on local cluster we expect 0 or 0Mi 0Gi memory requests
+        pattern: "^0(Ki|Mi|Gi)?$"
+
+  - it: sets non-zero forecastle container resources for the sf-k8s01-dev cluster
+    values: *developmentValues
+    template: *deploymentTemplate
+    asserts: &nonLocalResourcesAssert
+    - matchRegex:
+        path: *cpuLimitsPath
+        # on non local cluster we expect >= 1m cpu limits
+        pattern: &nonZeroCpuPattern "^[1-9][0-9]*(m)?$"
+    - matchRegex:
+        path: *memoryLimitsPath
+        # on non local cluster we expect non 0 memory limits
+        pattern: *nonZeroMemoryPattern
+    - matchRegex:
+        path: *requestsCpuPath
+        # on non local cluster we expect  >= 1m cpu requests
+        pattern: *nonZeroCpuPattern
+    - matchRegex:
+        path: *requestsMemoryPath
+        # on non local cluster we expect non 0 memory requests
+        pattern: *nonZeroMemoryPattern
+
+  - it: sets non-zero forecastle container resources for the sf-k8s01-prod cluster
+    values: *productionValues
+    template: *deploymentTemplate
+    asserts: *nonLocalResourcesAssert
+
+  - it: sets non-zero forecastle container resources for the sf-k8s03-dev cluster
+    values:
+    - *subchartOverrideValuesFile
+    - ../values-development.yaml
+    - ../values-sf-k8s03-dev.yaml
+    template: *deploymentTemplate
+    asserts: *nonLocalResourcesAssert
+
+  - it: sets the forecastle container resources from values-subchart-overrides.yaml
+    values:
+    - *subchartOverrideValuesFile
+    template: *deploymentTemplate
+    asserts:
+    - equal:
+        path: *requestsCpuPath
+        value: 10m
+    - equal:
+        path: *requestsMemoryPath
+        value: 16Mi
+    - equal:
+        path: *cpuLimitsPath
+        value: 300m
+    - equal:
+        path: *memoryLimitsPath
+        value: 64Mi
+
+  - it: sets the exact zero-resource overrides from values-local.yaml
+    values: *localValues
+    template: *deploymentTemplate
+    asserts:
+    - equal:
+        path: *requestsCpuPath
+        value: 0m
+    - equal:
+        path: *requestsMemoryPath
+        value: 0Mi
+    - equal:
+        path: *cpuLimitsPath
+        value: 0m
+    - equal:
+        path: *memoryLimitsPath
+        value: 64Mi
+    - matchSnapshot:
+        path: spec.template.spec.containers[?(@.name == "forecastle")].resources
+
+  - it: sets non-zero forecastle container resources for the sf-k8s04-dev cluster
+    values:
+    - *subchartOverrideValuesFile
+    - ../values-development.yaml
+    - ../values-sf-k8s04-dev.yaml
+    template: *deploymentTemplate
+    asserts: *nonLocalResourcesAssert
+
+  - it: sets non-zero forecastle container resources for the sf-k8s05-dev cluster
+    values:
+    - *subchartOverrideValuesFile
+    - ../values-development.yaml
+    - ../values-sf-k8s05-dev.yaml
+    template: *deploymentTemplate
+    asserts: *nonLocalResourcesAssert
+
+  - it: renders the forecastle image from the subchart defaults
+    values:
+    - *subchartOverrideValuesFile
+    template: *deploymentTemplate
+    asserts:
+    - matchRegex:
+        path: spec.template.spec.containers[?(@.name == "forecastle")].image
+        pattern: ^stakater/forecastle:v[0-9.]+$

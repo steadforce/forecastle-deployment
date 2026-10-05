@@ -1,71 +1,126 @@
-suite: acme virtual service host per environment
+suite: applications-acme VirtualService per cluster
+release:
+  name: nexus
 templates:
-- acme-virtual-service.yaml
+  - acme-virtual-service.yaml
 tests:
-- it: renders the default host from the local domain
-  capabilities: &istioVirtualServiceCapabilities
-    apiVersions:
-    - networking.istio.io/v1beta1/VirtualService
-  asserts:
-  - equal:
-      path: &virtualServiceHostPath spec.hosts[0]
-      value: applications.steadops.local.steadforce.com
-  - matchSnapshot:
-      path: spec.hosts
+  - it: renders the virtual service with the configured host, gateway and route
+    capabilities: &virtualServiceCapabilities
+      apiVersions:
+        - networking.istio.io/v1beta1/VirtualService
+    set:
+      subDomain: test-subdomain
+      global:
+        acme:
+          domain: test.domain.com
+        istio:
+          ingressGateway:
+            namespace: istio-namespace
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: VirtualService
+      - isAPIVersion:
+          of: networking.istio.io/v1beta1
+      - equal:
+          path: metadata.name
+          value: applications-acme
+      - equal:
+          path: spec.gateways[0]
+          value: istio-namespace/applications-acme-gateway
+      - equal:
+          path: spec.hosts[0]
+          value: test-subdomain.test.domain.com
+      - equal:
+          path: spec.http[0].route[0].destination.host
+          value: forecastle
+      - equal:
+          path: spec.http[0].route[0].destination.port.number
+          value: 80
+  - it: omits the virtual service without the VirtualService API
+    asserts:
+      - hasDocuments:
+          count: 0
 
-- it: renders the development host from values-development.yaml
-  capabilities: *istioVirtualServiceCapabilities
-  values:
-  - ../values-development.yaml
-  asserts:
-  - equal:
-      path: *virtualServiceHostPath
-      value: applications.dev.k8s01.steadforce.com
+  - it: uses the default ingress gateway namespace from values.yaml
+    capabilities: *virtualServiceCapabilities
+    values:
+      - &subchartOverrideValuesFile ../values-subchart-overrides.yaml
+      - ../values-local.yaml
+    asserts:
+      - equal:
+          path: spec.gateways[0]
+          value: istio-ingress/applications-acme-gateway
 
-- it: renders the production host from values-production.yaml
-  capabilities: *istioVirtualServiceCapabilities
-  values:
-  - ../values-production.yaml
-  asserts:
-  - equal:
-      path: *virtualServiceHostPath
-      value: applications.k8s01.steadforce.com
+  - it: renders the local applications host
+    capabilities: *virtualServiceCapabilities
+    values:
+      - *subchartOverrideValuesFile
+      - ../values-local.yaml
+    asserts:
+      - equal:
+          path: &hostPath spec.hosts[0]
+          value: applications.steadops.local.steadforce.com
 
-- it: renders the sf-k8s03-dev host from values-sf-k8s03-dev.yaml
-  capabilities: *istioVirtualServiceCapabilities
-  values:
-  - ../values-sf-k8s03-dev.yaml
-  asserts:
-  - equal:
-      path: *virtualServiceHostPath
-      value: applications.k8s03-dev.steadforce.com
+  - it: renders the sf-k8s01-dev applications host
+    capabilities: *virtualServiceCapabilities
+    values:
+      - *subchartOverrideValuesFile
+      - ../values-development.yaml
+    asserts:
+      - equal:
+          path: *hostPath
+          value: applications.dev.k8s01.steadforce.com
 
-- it: renders the sf-k8s04-dev host from values-sf-k8s04-dev.yaml
-  capabilities: *istioVirtualServiceCapabilities
-  values:
-  - ../values-sf-k8s04-dev.yaml
-  asserts:
-  - equal:
-      path: *virtualServiceHostPath
-      value: applications.k8s04-dev.steadforce.com
+  - it: renders the sf-k8s01-prod applications host
+    capabilities: *virtualServiceCapabilities
+    values:
+      - *subchartOverrideValuesFile
+      - ../values-production.yaml
+    asserts:
+      - equal:
+          path: *hostPath
+          value: applications.k8s01.steadforce.com
 
-- it: renders the sf-k8s05-dev host from values-sf-k8s05-dev.yaml
-  capabilities: *istioVirtualServiceCapabilities
-  values:
-  - ../values-sf-k8s05-dev.yaml
-  asserts:
-  - equal:
-      path: *virtualServiceHostPath
-      value: applications.k8s05-dev.steadforce.com
+  - it: renders the sf-k8s03-dev applications host
+    capabilities: *virtualServiceCapabilities
+    values:
+      - *subchartOverrideValuesFile
+      - ../values-development.yaml
+      - ../values-sf-k8s03-dev.yaml
+    asserts:
+      - equal:
+          path: *hostPath
+          value: applications.k8s03-dev.steadforce.com
 
-- it: routes through the configured istio ingress gateway
-  capabilities: *istioVirtualServiceCapabilities
-  asserts:
-  - equal:
-      path: spec.gateways[0]
-      value: istio-ingress/applications-acme-gateway
+  - it: renders the sf-k8s04-dev applications host
+    capabilities: *virtualServiceCapabilities
+    values:
+      - *subchartOverrideValuesFile
+      - ../values-development.yaml
+      - ../values-sf-k8s04-dev.yaml
+    asserts:
+      - equal:
+          path: *hostPath
+          value: applications.k8s04-dev.steadforce.com
 
-- it: omits the virtual service when the istio CRD is not installed
-  asserts:
-  - hasDocuments:
-      count: 0
+  - it: renders the sf-k8s05-dev applications host
+    capabilities: *virtualServiceCapabilities
+    values:
+      - *subchartOverrideValuesFile
+      - ../values-development.yaml
+      - ../values-sf-k8s05-dev.yaml
+    asserts:
+      - equal:
+          path: *hostPath
+          value: applications.k8s05-dev.steadforce.com
+
+  - it: renders the local applications host from the values.yaml defaults
+    capabilities: *virtualServiceCapabilities
+    asserts:
+      - equal:
+          path: *hostPath
+          value: applications.steadops.local.steadforce.com
+      - matchSnapshot:
+          path: spec.hosts
