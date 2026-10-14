@@ -2,6 +2,7 @@ local-ca.*
 .vscode
 *.swp
 .project
-_local
+_render_output/
 tests/__snapshot__/
 /test-output.xml
+.debug/

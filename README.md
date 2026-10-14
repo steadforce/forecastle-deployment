@@ -1,157 +1,160 @@
 # Forecastle Deployment
 
-Helm umbrella chart that packages and configures [Forecastle](https://github.com/stakater/Forecastle) for
-STEADFORCE Kubernetes clusters, exposing it through an Istio `VirtualService` on a per-environment ACME domain.
+Umbrella Helm chart that packages and configures [Forecastle](https://github.com/stakater/Forecastle), the
+Steadforce application dashboard, and exposes it through Istio.
 
 > [!IMPORTANT]
-> Never install the content of this repository on a cluster manually. Deployments are managed by ArgoCD.
+> Never install the content of this repository on our clusters manually. Deployment is fully managed by Argo CD.
 
 ## Overview
 
-Forecastle is a control panel that discovers and lists the web applications running in a Kubernetes namespace.
-This chart wraps the upstream `forecastle` chart as a dependency and adds:
+- Pulls in the `forecastle` chart from the [Stakater chart repository](https://stakater.github.io/stakater-charts)
+  as a dependency. The pinned version is set in `Chart.yaml` and `Chart.lock`, and its archive is committed under
+  `charts/`.
+- Configures Forecastle with the `STEADFORCE APPS` title and header colors, discovers apps through the
+  `ForecastleApp` CRD, and selects ingresses from any namespace.
+- Creates the release namespace with the `istio-injection: enabled` label.
+- Routes `applications.<domain>` through the `applications-acme` Istio `VirtualService` to the `forecastle`
+  Service on port `80`, with an HSTS response header. The `VirtualService` is rendered only when the
+  `networking.istio.io/v1beta1/VirtualService` API is available. The `applications-acme-gateway` it references in
+  the ingress gateway namespace is not part of this chart.
 
-- An Istio `VirtualService` (`templates/acme-virtual-service.yaml`) exposing Forecastle under
-  `applications.<acme-domain>`.
-- A `Namespace` manifest (`templates/namespace.yaml`) with Istio sidecar injection enabled.
-- Per-environment values files that override the ACME domain and, for local development, the container
-  resource requests and limits.
+## Prerequisites
 
-## Chart Structure
+- [Docker](https://docs.docker.com/get-docker/), for running Helm and helm-unittest in containers.
 
-| Path                          | Description                                              |
-|-------------------------------|------------------------------------------------------------|
-| `Chart.yaml`                  | Chart metadata and the `forecastle` dependency declaration. |
-| `charts/`                     | Downloaded dependency archive (`forecastle-v1.0.159.tgz`). |
-| `templates/`                  | Root templates (namespace, Istio virtual service).         |
-| `values.yaml`                 | Default values shared by all environments.                  |
-| `values-<environment>.yaml`   | Per-environment overrides (see [Environments](#environments)). |
-| `tests/`                      | Helm unittest suites (see [Running Tests](#running-tests)). |
+All commands run from the repository root.
+
+## Repository Layout
+
+| File / Directory | Purpose |
+| --- | --- |
+| `Chart.yaml` | Declares the `forecastle` chart dependency of this umbrella chart. |
+| `Chart.lock` | Pins the resolved dependency version. |
+| `charts/` | Committed archive of the `forecastle` dependency. |
+| `values.yaml` | Default ACME domain, Istio ingress gateway namespace, and `applications` subdomain. |
+| `values-subchart-overrides.yaml` | Overrides for the `forecastle` dependency: dashboard config and resources. |
+| `values-local.yaml` | Zero CPU and memory requests and zero CPU limit for the local cluster. |
+| `values-development.yaml`, `values-production.yaml` | ACME domains of `sf-k8s01-dev` and `sf-k8s01-prod`. |
+| `values-sf-k8s03-dev.yaml`, `values-sf-k8s04-dev.yaml`, `values-sf-k8s05-dev.yaml` | ACME domains of `sf-k8s03-dev`, `sf-k8s04-dev`, and `sf-k8s05-dev`, each layered on top of `values-development.yaml`. |
+| `templates/` | The release `Namespace` and the `applications-acme` `VirtualService`. |
+| `tests/` | Helm unittest suites, with git-ignored snapshots. |
+| `renovate.json` | Renovate configuration for this repository. |
+| `.github/workflows/` | CI workflows for unit tests and secret scanning. |
+
+> [!NOTE]
+> `values-subchart-overrides.yaml` is kept separate from the environment value files so that unit tests can catch
+> incompatible changes in the values of the subchart on their own. This split is necessary because Helm does not
+> allow switching off `values.yaml`.
 
 ## Environments
 
-| Values File                     | Environment    | ACME Domain                        |
-|----------------------------------|----------------|-------------------------------------|
-| `values-local.yaml`              | Local          | `steadops.local.steadforce.com` (default, zero resource requests) |
-| `values-development.yaml`        | Development    | `dev.k8s01.steadforce.com`          |
-| `values-production.yaml`         | Production     | `k8s01.steadforce.com`              |
-| `values-sf-k8s03-dev.yaml`       | sf-k8s03-dev   | `k8s03-dev.steadforce.com`          |
-| `values-sf-k8s04-dev.yaml`       | sf-k8s04-dev   | `k8s04-dev.steadforce.com`          |
-| `values-sf-k8s05-dev.yaml`       | sf-k8s05-dev   | `k8s05-dev.steadforce.com`          |
+Argo CD renders the chart for each cluster. Its value files are configured outside this repository; the unit
+tests and the rendering example below use these combinations:
 
-## Dependencies
+| Cluster | Value Files |
+| --- | --- |
+| `local` | `values-subchart-overrides.yaml`, `values-local.yaml` |
+| `sf-k8s01-dev` | `values-subchart-overrides.yaml`, `values-development.yaml` |
+| `sf-k8s01-prod` | `values-subchart-overrides.yaml`, `values-production.yaml` |
+| `sf-k8s03-dev` | `values-subchart-overrides.yaml`, `values-development.yaml`, `values-sf-k8s03-dev.yaml` |
+| `sf-k8s04-dev` | `values-subchart-overrides.yaml`, `values-development.yaml`, `values-sf-k8s04-dev.yaml` |
+| `sf-k8s05-dev` | `values-subchart-overrides.yaml`, `values-development.yaml`, `values-sf-k8s05-dev.yaml` |
 
-This chart pulls in `forecastle` as a dependency. The version used is specified in `Chart.yaml` under
-`dependencies`. If you change that version, update the downloaded archive in `charts/` and commit the
-result alongside the altered `Chart.yaml` and `Chart.lock`:
+## Rendering
+
+Render the manifests of every cluster into the git-ignored `_render_output/<cluster>/` folder:
 
 ```sh
  docker run \
-  --rm \
-  -e HOME=/tmp \
-  -u $(id -u) \
-  -v "$(pwd):/apps" \
-  -w /apps \
-  alpine/helm dependency update .
+   -e HOME=/tmp \
+   --entrypoint sh \
+   --rm \
+   -u $(id -u) \
+   -v "$(pwd):/apps" \
+   -w /apps \
+   alpine/helm -c '
+     for cluster in \
+       local=values-local.yaml \
+       sf-k8s01-dev=values-development.yaml \
+       sf-k8s01-prod=values-production.yaml \
+       sf-k8s03-dev=values-development.yaml,values-sf-k8s03-dev.yaml \
+       sf-k8s04-dev=values-development.yaml,values-sf-k8s04-dev.yaml \
+       sf-k8s05-dev=values-development.yaml,values-sf-k8s05-dev.yaml; do
+       helm template \
+         -a networking.istio.io/v1beta1/VirtualService \
+         -f "values-subchart-overrides.yaml,${cluster#*=}" \
+         --include-crds \
+         -n forecastle \
+         --output-dir "_render_output/${cluster%%=*}" \
+         --skip-tests \
+         forecastle \
+         .
+     done
+   '
 ```
 
-See the [Helm docs](https://helm.sh/docs/topics/charts/#chart-dependencies) for details.
+`-a networking.istio.io/v1beta1/VirtualService` makes the `VirtualService` render, as it does on clusters with
+Istio installed.
 
-## Rendering Templates Locally
+## Testing
 
-Render the manifests for a given environment with `helm template`, including CRDs and the Istio/cert-manager
-API versions the templates depend on:
-
-### Local
+The dependency archive is committed under `charts/`, so the unit tests run right after cloning:
 
 ```sh
  docker run \
-  --rm \
-  -e HOME=/tmp \
-  -u $(id -u) \
-  -v "$(pwd):/apps" \
-  -w /apps \
-  alpine/helm template forecastle . \
-  --api-versions cert-manager.io/v1 \
-  --api-versions networking.istio.io/v1beta1/VirtualService \
-  --include-crds \
-  --namespace forecastle \
-  --output-dir _local/local \
-  --skip-tests \
-  --values values-local.yaml
-```
-
-### Development
-
-```sh
- docker run \
-  --rm \
-  -e HOME=/tmp \
-  -u $(id -u) \
-  -v "$(pwd):/apps" \
-  -w /apps \
-  alpine/helm template forecastle . \
-  --api-versions cert-manager.io/v1 \
-  --api-versions networking.istio.io/v1beta1/VirtualService \
-  --include-crds \
-  --namespace forecastle \
-  --output-dir _local/dev \
-  --skip-tests \
-  --values values-development.yaml
-```
-
-### Production
-
-```sh
- docker run \
-  --rm \
-  -e HOME=/tmp \
-  -u $(id -u) \
-  -v "$(pwd):/apps" \
-  -w /apps \
-  alpine/helm template forecastle . \
-  --api-versions cert-manager.io/v1 \
-  --api-versions networking.istio.io/v1beta1/VirtualService \
-  --include-crds \
-  --namespace forecastle \
-  --output-dir _local/prod \
-  --skip-tests \
-  --values values-production.yaml
+   -e HELM_CACHE_HOME=/tmp/helm/.config \
+   --rm \
+   -u $(id -u) \
+   -v "$(pwd):/apps" \
+   -w /apps \
+   helmunittest/helm-unittest \
+   .
 ```
 
 > [!TIP]
-> Use `--values values-sf-k8s03-dev.yaml`, `--values values-sf-k8s04-dev.yaml` or `--values values-sf-k8s05-dev.yaml` to render the dedicated
-> dev-cluster environments the same way.
-
-## Running Tests
-
-Suites live under `tests/` and cover the namespace, virtual service host per environment, and the subchart
-deployment/configmap rendering driven by the root values files.
-
-```sh
- docker run \
-  --rm \
-  -e HELM_CACHE_HOME=/tmp/helm/.config \
-  -u $(id -u) \
-  -v "$(pwd):/apps" \
-  -w /apps \
-  helmunittest/helm-unittest .
-```
-
-To produce a JUnit report instead:
-
-```sh
- docker run \
-  --rm \
-  -e HELM_CACHE_HOME=/tmp/helm/.config \
-  -u $(id -u) \
-  -v "$(pwd):/apps" \
-  -w /apps \
-  helmunittest/helm-unittest -o test-output.xml .
-```
+> Add `-t JUnit -o test-output.xml` after `helmunittest/helm-unittest` to also write a JUnit report, as the pipeline
+> does. Without `-t`, helm-unittest writes the report in XUnit format. `test-output.xml` is git-ignored.
 
 ## Continuous Integration
 
-- `.github/workflows/helm-unittest.yaml` runs the Helm unittest suites on every push.
-- `.github/workflows/trufflehog.yaml` scans the repository for leaked secrets on pushes and pull requests
-  targeting `main`, and can be triggered manually.
+Both workflows call reusable workflows from
+[`steadforce/steadops-workflows`](https://github.com/steadforce/steadops-workflows), pinned to `v4.2.0`.
+
+- `helm-unittest.yaml` runs on every push. It installs the dependency pinned in `Chart.lock`, runs the Helm
+  unittest suite including subchart tests, publishes a JUnit test report, and runs `helm lint`.
+- `trufflehog.yaml` scans the commits of pushes and pull requests to `main`, and runs on demand, for leaked
+  secrets.
+
+### Microsoft Teams Notifications
+
+On branches starting with `renovate/`, the unittest workflow posts its result to Microsoft Teams:
+
+| Result | Repository Secret |
+| --- | --- |
+| Success | `STEADOPS_HELM_RENOVATION_MS_TEAMS_WEBHOOK` |
+| Failure | `STEADOPS_HELM_RENOVATION_ERROR_MS_TEAMS_WEBHOOK`, a separate error channel |
+
+Both secrets are optional and hold a Microsoft Teams Workflows webhook URL. When the error webhook is not set,
+failures go to `STEADOPS_HELM_RENOVATION_MS_TEAMS_WEBHOOK` instead. Without either secret, no notification is sent.
+
+## Dependency Updates
+
+Renovate opens pull requests for dependency updates, based on `config:recommended` with a dependency dashboard.
+Nothing is automerged. With `helmUpdateSubChartArchives`, Renovate also replaces the archive in `charts/` when it
+updates the `forecastle` chart.
+
+When changing the dependency version in `Chart.yaml` by hand, update the lock file and the archive, then commit
+`Chart.yaml`, `Chart.lock`, and the new archive in `charts/` together:
+
+```sh
+ docker run \
+   -e HOME=/tmp \
+   --rm \
+   -u $(id -u) \
+   -v "$(pwd):/apps" \
+   -w /apps \
+   alpine/helm dependency update .
+```
+
+See the [Helm docs](https://helm.sh/docs/topics/charts/#chart-dependencies) for details on chart dependencies.
